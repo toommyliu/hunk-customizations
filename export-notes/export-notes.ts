@@ -100,24 +100,24 @@ async function clearCapturedNotes(
   return true;
 }
 
-function formatRange(side: "old" | "new", range: readonly [number, number]) {
+function formatRange(range: readonly [number, number]) {
   const [start, end] = range;
-  return start === end ? `${side} ${start}` : `${side} ${start}-${end}`;
+  return start === end ? `line ${start}` : `lines ${start}-${end}`;
 }
 
 function formatAnchor(note: ExtensionReviewSnapshotNote) {
-  const parts: string[] = [];
+  const { newRange, oldRange, preferred } = note.anchor;
 
-  if (note.anchor.ownerHunkIndex !== undefined) {
-    parts.push(`hunk ${note.anchor.ownerHunkIndex + 1}`);
+  if (newRange && oldRange) {
+    const oldLocation = formatRange(oldRange);
+    const newLocation = formatRange(newRange);
+    return oldLocation === newLocation ? newLocation : `${oldLocation} before, ${newLocation} after`;
   }
-  if (note.anchor.oldRange) parts.push(formatRange("old", note.anchor.oldRange));
-  if (note.anchor.newRange) parts.push(formatRange("new", note.anchor.newRange));
-  if (parts.length > 0) return parts.join(", ");
+  if (newRange) return formatRange(newRange);
+  if (oldRange) return `removed ${formatRange(oldRange)}`;
 
-  if (note.anchor.preferred) {
-    return `${note.anchor.preferred.side} line ${note.anchor.preferred.line}`;
-  }
+  if (preferred) return preferred.side === "new" ? `line ${preferred.line}` : `removed line ${preferred.line}`;
+  if (note.anchor.ownerHunkIndex !== undefined) return `hunk ${note.anchor.ownerHunkIndex + 1}`;
 
   return "file-level note";
 }
